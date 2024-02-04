@@ -1,0 +1,22 @@
+---
+services:
+  traefik:
+    image: traefik:v2.10
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./data/acme.json:/acme.json
+      - ./traefik.toml:/etc/traefik/traefik.toml
+  web:
+    build: .
+    command: ["./bin/rails", "server", "--binding", "0.0.0.0"]
+    environment:
+      - RAILS_MASTER_KEY=${RAILS_MASTER_KEY}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.web.entrypoints=websecure"
+      - "traefik.http.routers.web.rule=Host(`transactional-email.example.com`)"
+      - "traefik.http.routers.web.tls.certresolver=myresolver"
+      - "traefik.http.services.web.loadbalancer.server.port=3000"

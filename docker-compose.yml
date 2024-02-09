@@ -14,9 +14,28 @@ services:
     command: ["./bin/rails", "server", "--binding", "0.0.0.0"]
     environment:
       - RAILS_MASTER_KEY=${RAILS_MASTER_KEY}
+    networks:
+      - default
+      - postfix-net
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.web.entrypoints=websecure"
       - "traefik.http.routers.web.rule=Host(`transactional-email.example.com`)"
       - "traefik.http.routers.web.tls.certresolver=myresolver"
       - "traefik.http.services.web.loadbalancer.server.port=3000"
+
+  postfix_relay:
+    image: mwader/postfix-relay
+    restart: unless-stopped
+    environment:
+      - OPENDKIM_DOMAINS=yourdomain.example
+    networks:
+      - postfix-net
+    ports:
+      - "127.0.0.1:25:25"
+    volumes:
+      - "./data/postfix_relay/keys:/etc/opendkim/keys"
+      - "./data/postfix_relay/spool:/var/spool/postfix"
+
+networks:
+  postfix-net:
